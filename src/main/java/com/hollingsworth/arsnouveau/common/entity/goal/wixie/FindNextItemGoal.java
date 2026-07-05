@@ -13,7 +13,6 @@ import com.hollingsworth.arsnouveau.common.network.Networking;
 import com.hollingsworth.arsnouveau.common.network.PacketAnimEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -26,7 +25,6 @@ import java.util.*;
 public class FindNextItemGoal extends ExtendedRangeGoal {
     EntityWixie wixie;
     BlockPos movePos;
-    ItemStack getStack;
     boolean found;
 
     public FindNextItemGoal(EntityWixie wixie) {
@@ -49,7 +47,7 @@ public class FindNextItemGoal extends ExtendedRangeGoal {
         }
 
         List<ItemStack> itemsNeeded = new ArrayList<>(tile.craftManager.neededItems);
-        if (itemsNeeded.size() == 0) {
+        if (itemsNeeded.isEmpty()) {
             found = true;
             return;
         }
@@ -93,12 +91,11 @@ public class FindNextItemGoal extends ExtendedRangeGoal {
         if (!(tileEntity instanceof WixieCauldronTile cauldronTile))
             return false;
 
-        boolean canStart = wixie.inventoryBackoff == 0
+        return (wixie.inventoryBackoff == 0
                 && cauldronTile.hasSource
                 && !cauldronTile.isCraftingDone()
                 && !cauldronTile.isOff
-                && !cauldronTile.craftManager.getNextItem().isEmpty();
-        return canStart;
+                && !cauldronTile.craftManager.getNextItem().isEmpty());
     }
 
     @Override
@@ -163,7 +160,7 @@ public class FindNextItemGoal extends ExtendedRangeGoal {
                 }
             }
             // Dont set found until all needed items are actually found.
-            if(tile.craftManager.neededItems.size() == 0) found = true;
+            if(tile.craftManager.neededItems.isEmpty()) found = true;
         }
 
         if (movePos != null && !found) {
