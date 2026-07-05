@@ -39,39 +39,50 @@ public class FindNextItemGoal extends ExtendedRangeGoal {
     public void start() {
         super.start();
         movePos = null;
+        found = false;
+
         Level world = wixie.getCommandSenderWorld();
         WixieCauldronTile tile = (WixieCauldronTile) world.getBlockEntity(wixie.cauldronPos);
         if (tile == null || tile.getInventories() == null) {
             found = true;
             return;
         }
-        getStack = tile.craftManager.getNextItem();
-        if (getStack.isEmpty()) {
+
+        List<ItemStack> itemsNeeded = new ArrayList<>(tile.craftManager.neededItems);
+        if (itemsNeeded.size() == 0) {
             found = true;
             return;
         }
-        Set<Item> itemSet = new HashSet<>();
-        itemSet.add(getStack.getItem());
-        for (BlockPos b : tile.getInventories()) {
-            BlockEntity blockEntity = world.getBlockEntity(b);
-            if (blockEntity == null)
-                continue;
-            IItemHandler itemHandler = world.getCapability(Capabilities.ItemHandler.BLOCK, b, null);
-            if (itemHandler == null)
-                continue;
-            for (int i = 0; i < itemHandler.getSlots(); i++) {
-                ItemStack stack = itemHandler.getStackInSlot(i);
-                if (stack.getItem() == getStack.getItem()) {
-                    movePos = b.immutable();
-                    this.startDistance = BlockUtil.distanceFrom(wixie.level(), wixie.position, movePos);
-                    break;
+
+        for (ItemStack neededItem : itemsNeeded) {
+            int neededCount = neededItem.getCount();
+            for (BlockPos b : tile.getInventories()) {
+                BlockEntity blockEntity = world.getBlockEntity(b);
+                if (blockEntity == null)
+                    continue;
+                IItemHandler itemHandler = world.getCapability(Capabilities.ItemHandler.BLOCK, b, null);
+                if (itemHandler == null)
+                    continue;
+                for (int i = 0; i < itemHandler.getSlots(); i++) {
+                    ItemStack stack = itemHandler.getStackInSlot(i);
+                    if (stack.getItem() == neededItem.getItem()) {
+                        movePos = b.immutable();
+                        this.startDistance = BlockUtil.distanceFrom(wixie.level(), wixie.position, movePos);
+                        neededCount--;
+                        if (neededCount == 0)
+                            break;
+                    }
                 }
             }
-            if (movePos != null) {
-                break;
+            // Invalidate craft if any items could not be found.w
+            if (neededCount > 0) {
+                tile.craftManager.outputStack = ItemStack.EMPTY;
+                tile.craftManager.neededItems.clear();
+                movePos = null;
+                found = true;
+                return;
             }
         }
-        found = false;
     }
 
     @Override
@@ -146,11 +157,17 @@ public class FindNextItemGoal extends ExtendedRangeGoal {
                                     anyFound = true;
                                 }
                             }
+                            // Skip checking the rest of the inventory slots when we have already found the item.
+                            break;
                         }
                     }
                 }
             }
-            found = true;
+            // Dont set found until all needed items are actually found.
+            if(tile.craftManager.neededItems.size() == 0)
+            {
+                found = true;
+            }
             return;
         }
 
