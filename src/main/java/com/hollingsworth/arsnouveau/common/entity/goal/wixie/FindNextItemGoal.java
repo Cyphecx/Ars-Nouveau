@@ -72,7 +72,7 @@ public class FindNextItemGoal extends ExtendedRangeGoal {
                     }
                 }
             }
-            // Invalidate craft if any items could not be found.w
+            // Invalidate craft if any items could not be found.
             if (neededCount > 0) {
                 tile.craftManager.outputStack = ItemStack.EMPTY;
                 tile.craftManager.neededItems.clear();
